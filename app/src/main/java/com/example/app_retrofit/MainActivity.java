@@ -5,32 +5,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import java.util.HashMap;
 import java.util.List;
-
-
-/*
-
-
-
-
-
-
-
-
-Weiter: 14:45 --> Video 222222222222222222222222222222
-
-
-
-
-
-
-
-
-
-
-*/
-
-
+import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -51,19 +28,27 @@ public class MainActivity extends AppCompatActivity {
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("http://192.168.2.99:3000")
+                // --> This is from the video, the other from our server...  <--
                 //.baseUrl("https://jsonplaceholder.typicode.com/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
 
-        getPosts();
-        //getComments();
+        //getPosts();
+        getComments();
     }
 
 
     private void getPosts(){
-        Call<List<Post>> call = jsonPlaceHolderApi.getPosts(new Integer[]{2,3,6}, null, null);
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("userId", "1");
+        parameters.put("_sort", "id");
+        parameters.put("_order", "desc");
+
+        //Call<List<Post>> call = jsonPlaceHolderApi.getPosts(new Integer[]{2,3,6}, null, null);
+        Call<List<Post>> call = jsonPlaceHolderApi.getPosts(parameters);
+
 
         call.enqueue(new Callback<List<Post>>() {
             @Override
@@ -98,7 +83,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void getComments(){
-        Call<List<Comment>> call = jsonPlaceHolderApi.getComments(3);
+        Call<List<Comment>> call = jsonPlaceHolderApi
+                .getComments("https://jsonplaceholder.typicode/post/3/comments");
 
         call.enqueue(new Callback<List<Comment>>() {
             @Override
