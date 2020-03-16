@@ -5,9 +5,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -26,17 +32,38 @@ public class MainActivity extends AppCompatActivity {
 
         textViewResult = findViewById(R.id.text_view_result);
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.2.99:3000")
-                // --> This is from the video, the other from our server...  <--
-                //.baseUrl("https://jsonplaceholder.typicode.com/")
-                .addConverterFactory(GsonConverterFactory.create())
+        // to customize the GSON behaviour...
+        Gson gson = new GsonBuilder().serializeNulls().create();
+
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        //CTRL + B  ----- or Mac: Cmd + B shows more about BODY and others...
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(loggingInterceptor)
                 .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                //.baseUrl("http://192.168.2.99:3000")
+                // --> This is from the video, the other from our server...  <--
+                .baseUrl("https://jsonplaceholder.typicode.com/")
+                //.addConverterFactory(GsonConverterFactory.create(gson))
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(okHttpClient)
+                .build();
+
+        // timeout problem...
+        // Solution: "make" an extra local gson server and include (locally) the data-file from the GSON-Server
+        // Problem: GSON-Endpoint cost money... after a while... (not enough Endpoints)
+
 
         jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
 
         //getPosts();
-        getComments();
+        //getComments();
+        //createPost();
+        updatePost();
+        //deletePost();
     }
 
 
@@ -115,4 +142,97 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void createPost() {
+        // first we need a Post-Object
+        Post post = new Post(23, "New Title", "New Text");
+
+        Map<String, String> fields = new HashMap<>();
+        fields.put("userId", "21");
+        fields.put("title", "New Title");
+
+        //Call<Post> call = jsonPlaceHolderApi.createPost(29, "New Title", "New Text");
+        Call<Post> call = jsonPlaceHolderApi.createPost(fields);
+
+        call.enqueue(new Callback<Post>() {
+            @Override
+            public void onResponse(Call<Post> call, Response<Post> response) {
+
+                if (!response.isSuccessful()) {
+                    textViewResult.setText("Code: " + response.code());
+                    return;
+                }
+
+                // now we want to retrieve the post we want to get back:
+                Post postResponse = response.body();
+
+                String content = "";
+                content += "Code: " + response.code() + "\n";
+                content += "ID: " + postResponse.getId() + "\n";
+                content += "User ID: " + postResponse.getUserId() + "\n";
+                content += "Title: " + postResponse.getTitle() + "\n";
+                content += "Text: " + postResponse.getText() + "\n\n";
+
+                textViewResult.setText(content);
+
+            }
+
+            @Override
+            public void onFailure(Call<Post> call, Throwable t) {
+                textViewResult.setText(t.getMessage());
+            }
+        });
+    }
+
+
+    private void updatePost() {
+        Post post = new Post(12, null, "New Text");
+
+        Call<Post> call = jsonPlaceHolderApi.putPost(5, post);
+
+        call.enqueue(new Callback<Post>() {
+            @Override
+            public void onResponse(Call<Post> call, Response<Post> response) {
+
+                if (!response.isSuccessful()) {
+                    textViewResult.setText("Code: " + response.code());
+                    return;
+                }
+
+                Post postResponse = response.body();
+
+                String content = "";
+                content += "Code: " + response.code() + "\n";
+                content += "ID: " + postResponse.getId() + "\n";
+                content += "User ID: " + postResponse.getUserId() + "\n";
+                content += "Title: " + postResponse.getTitle() + "\n";
+                content += "Text: " + postResponse.getText() + "\n\n";
+
+                textViewResult.setText(content);
+            }
+
+            @Override
+            public void onFailure(Call<Post> call, Throwable t) {
+                textViewResult.setText(t.getMessage());
+            }
+        });
+    }
+
+
+    private void deletePost() {
+        Call<Void> call = jsonPlaceHolderApi.deletePost(5);
+
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                textViewResult.setText("Code: " + response.code());
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                textViewResult.setText(t.getMessage());
+            }
+        });
+    }
+
 }

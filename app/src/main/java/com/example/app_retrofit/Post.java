@@ -5,17 +5,25 @@ import com.google.gson.annotations.SerializedName;
 public class Post {
 
     private int userId;
-    private int id;
+    private Integer id; // because it will be null if we are not using it and then it will get ignored!
     private String title;
 
     @SerializedName("body")
     private String text;
 
+
+    public Post(int userId, String title, String text) {
+        this.userId = userId;
+        this.title = title;
+        this.text = text;
+    }
+
+    // getter
     public int getUserId() {
         return userId;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
